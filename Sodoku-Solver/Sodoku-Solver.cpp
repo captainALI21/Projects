@@ -2,35 +2,29 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include<Windows.h>
 using namespace std;
 
-void Print(vector<vector<int>> Grid) {
+void Print(const vector<vector<int>>& Grid) {
     for (int i = 0; i < 9; i++) {
         for (int j = 0; j < 9; j++) {
             cout << Grid[i][j] << " ";
-            //if (j == 2 || j == 5 || j == 8) {
-            //   cout << "  ";
-            //}
         }
         cout << endl;
-        //if (i == 2 || i == 5 || i == 8) {
-        //    cout << endl;
-        //}
     }
 }
-bool CheckSolvedRow(vector<int> row) {
-    int Count;
-    vector<int> temp = { 1,2,3,4,5,6,7,8,9 };
-    for (int i = 0; i < 9; i++) {
-        Count = static_cast<int>(count(row.begin(), row.end(), temp[i]));
-        if (Count != 1) {
+
+bool CheckSolvedRow(const vector<int>& row) {
+    vector<int> temp = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    for (int num : temp) {
+        if (count(row.begin(), row.end(), num) != 1) {
             return false;
         }
     }
     return true;
 }
-bool CheckSolvedBlock(vector<vector<int>> Grid, int Block) {
-    vector<int>temp;
+bool CheckSolvedBlock(const vector<vector<int>>& Grid, int Block) {
+    vector<int> temp;
     int Row = (Block / 3) * 3;
     int Col = (Block % 3) * 3;
     for (int i = Row; i < Row + 3; i++) {
@@ -38,31 +32,25 @@ bool CheckSolvedBlock(vector<vector<int>> Grid, int Block) {
             temp.push_back(Grid[i][j]);
         }
     }
-    if (CheckSolvedRow(temp)) {
-        return true;
-    }
-    return false;
+    return CheckSolvedRow(temp);
 }
-bool CheckSolvedColumn(vector<vector<int>> Grid, int Column) {
-    vector<int>temp;
+bool CheckSolvedColumn(const vector<vector<int>>& Grid, int Column) {
+    vector<int> temp;
     for (int i = 0; i < 9; i++) {
         temp.push_back(Grid[i][Column]);
     }
-    if (CheckSolvedRow(temp)) {
-        return true;
-    }
-    return false;
+    return CheckSolvedRow(temp);
 }
-bool CheckSolved(vector<vector<int>> Grid) {
+bool CheckSolved(const vector<vector<int>>& Grid) {
     for (int i = 0; i < 9; i++) {
-        if (!(CheckSolvedRow(Grid[i]) && CheckSolvedBlock(Grid, i) && CheckSolvedColumn(Grid, i))) {
+        if (!CheckSolvedRow(Grid[i]) || !CheckSolvedBlock(Grid, i) || !CheckSolvedColumn(Grid, i)) {
             return false;
         }
     }
     return true;
 }
 
-bool isPresent(vector<vector<int>> Grid,int Num,  int i, int j) {
+bool isPresent(const vector<vector<int>>& Grid, int Num, int i, int j) {
     for (int a = 0; a < 9; a++) {
         if (Grid[i][a] == Num || Grid[a][j] == Num) {
             return true;
@@ -79,51 +67,34 @@ bool isPresent(vector<vector<int>> Grid,int Num,  int i, int j) {
     }
     return false;
 }
-bool NotesMaker(vector<vector<vector<int>>>& Notes, const vector<vector<int>>& Grid) {
-    vector<int> temp = { 1,2,3,4,5,6,7,8,9 };
-    Notes = vector<vector<vector<int>>>(9, vector<vector<int>>(9));
-    for (int i = 0; i < 9; i++) {
-        for (int j = 0; j < 9; j++) {
-            if (Grid[i][j] == 0) {
-                for (int k = 0; k < 9; k++) {
-                    if (!isPresent(Grid, temp[k], i, j)) {
-                        Notes[i][j].push_back(temp[k]);
-                    }
-                }
+
+bool findNextCell(const vector<vector<int>>& Grid, int& i, int& j) {
+    for (int x = i; x < 9; x++) {
+        for (int y = (x == i ? j : 0); y < 9; y++) {
+            if (Grid[x][y] == 0) {
+                i = x;
+                j = y;
+                return true;
             }
         }
     }
-    return true;
+    return false;
 }
-bool NumberInserter(vector<vector<vector<int>>>& Notes, vector<vector<int>>& Grid, int& Count) {
-    for (int i = 0; i < 9; i++) {
-        for (int j = 0; j < 9; j++) {
-            if (Grid[i][j] == 0) {
-                if (Notes[i][j].size() == 1) {
-                    Grid[i][j] = Notes[i][j][0];
-                    Notes[i][j].clear();
-                    Count--;
-                }
-            }
-        }
-    }
-    return true;
-}
-bool SolveGrid(vector<vector<int>>& Grid) {
-    if (CheckSolved(Grid)) {
+bool solve(vector<vector<int>>& Grid) {
+    int i = 0, j = 0;
+    if (!findNextCell(Grid, i, j)) {
         return true;
     }
-    int Count = 0;
-    for (int i = 0; i < 9; i++) {
-        Count = Count + static_cast<int>(count(Grid[i].begin(), Grid[i].end(), 0));
+    for (int num = 1; num <= 9; num++) {
+        if (!isPresent(Grid, num, i, j)) {
+            Grid[i][j] = num;
+            if (solve(Grid)) {
+                return true;
+            }
+            Grid[i][j] = 0;
+        }
     }
-    vector<vector<vector<int>>>Notes(9, vector<vector<int>>(9));
-    while (Count != 0) {
-    //for (int a = 0; a < 2; a++) {
-        NotesMaker(Notes, Grid);
-        NumberInserter(Notes, Grid, Count);
-    }
-    return true;
+    return false;
 }
 int main() {
     ifstream reader("text.txt");
@@ -133,11 +104,15 @@ int main() {
             reader >> Grid[i][j];
         }
     }
-    cout << CheckSolved(Grid) << endl;
-    Print(Grid);
-    SolveGrid(Grid);
-    cout << endl;
-    Print(Grid);
     reader.close();
+    cout << "Initial Grid:" << endl;
+    Print(Grid);
+    if (solve(Grid)) {
+        cout << "Solved Grid:" << endl;
+        Print(Grid);
+    }
+    else {
+        cout << "No solution exists." << endl;
+    }
     return 0;
 }
