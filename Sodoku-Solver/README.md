@@ -1,2 +1,2 @@
 # Sodoku Solver
-Written in C++ the Program takes its input from the text file and outputs the solved 9x9 Sodoku puzzle in the terminal
+This program, written in C++, reads a 9x9 Sudoku puzzle from a text file and outputs the solved puzzle in the terminal using a backtracking algorithm.
